@@ -81,17 +81,17 @@ export async function color_fill(color) {
   });
 }
 
-export async function qrcode(text) {
+export async function qrcode(text, ox = 0, oy = 0) {
   return new Promise((resolve) => {
     const qr = QRCode.create(text, { errorCorrectionLevel: "L" });
 
     const { data, size } = qr.modules;
 
-    for (let y = 0; y < size && y < SCREEN_SIZE; y++) {
-      for (let x = 0; x < size && x < SCREEN_SIZE; x++) {
+    for (let y = 0; y < size && y + oy < SCREEN_SIZE; y++) {
+      for (let x = 0; x < size && x + ox < SCREEN_SIZE; x++) {
         const isDark = data[y * size + x];
 
-        queue.push([x + SCREEN_X, y + SCREEN_Y, isDark ? 9 : 0]);
+        queue.push([x + ox + SCREEN_X, y + oy + SCREEN_Y, isDark ? 9 : 0]);
       }
     }
 

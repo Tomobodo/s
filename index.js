@@ -1,4 +1,5 @@
 import readline from "readline";
+import QRCode from "qrcode";
 
 import {
   color_fill,
@@ -290,6 +291,19 @@ const STATES = {
       await draw_sprite(await load_png("sprites/snake-index2.png"));
       await execute_queue();
       await new Promise((r) => setTimeout(r, 5000));
+      await setState("show_qr");
+    },
+  },
+
+  show_qr: {
+    onEnter: async () => {
+      const qr = QRCode.create("t.ly/XhonS", { errorCorrectionLevel: "L" });
+      const { size } = qr.modules;
+      const ox = Math.floor((SCREEN_SIZE - size) / 2);
+      const oy = Math.floor((SCREEN_SIZE - size) / 2);
+      await qrcode("t.ly/XhonS", ox, oy);
+      await execute_queue();
+      await new Promise((r) => setTimeout(r, 3000));
       await setState("draw_title");
     },
   },
