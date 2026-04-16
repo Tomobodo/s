@@ -30,10 +30,10 @@ function help() {
 
 async function run(cmd, arg) {
   switch (cmd) {
-    case "help": help(); break;
-    case "c":    canvas.color_fill(0); break;
-    case "qr":   canvas.qrcode(arg); break;
-    case "dqr":  canvas.doubleqrcode(arg); break;
+    case "help":   help(); break;
+    case "c":      canvas.color_fill(0); break;
+    case "qr":     canvas.qrcode(arg); break;
+    case "dqr":    canvas.doubleqrcode(arg); break;
     case "sprite":
       canvas.draw_sprite(await Canvas.load_png(`sprites/${arg}.png`));
       break;
@@ -48,34 +48,40 @@ async function run(cmd, arg) {
   return true;
 }
 
-// If a command was passed as CLI arg, run it and exit
-for (const cmd of ["c", "qr", "dqr", "sprite", "snake", "q"]) {
-  if (args[cmd] !== undefined) {
-    const arg = args[cmd] === true ? "" : args[cmd];
-    await run(cmd, arg);
+// Detect if a command was passed as a CLI arg
+const cliCmd = ["c", "qr", "dqr", "sprite", "snake"].find((c) => args[c] !== undefined);
+
+if (cliCmd) {
+  await run(cliCmd, args[cliCmd] === true ? "" : args[cliCmd]);
+
+  if (cliCmd === "snake") {
+    // Stay alive; let the event loop keep the process running.
+    // Clean shutdown on SIGINT / SIGTERM.
+    for (const sig of ["SIGINT", "SIGTERM"]) {
+      process.on(sig, async () => { await canvas.close(); process.exit(0); });
+    }
+  } else {
+    await canvas.flush();
     await canvas.close();
-    process.exit(0);
   }
+} else {
+  // Interactive mode
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  const prompt = () => rl.question("> ", async (line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("/")) {
+      console.log("Les commandes commencent par /. Tapez /help.");
+      return prompt();
+    }
+    const [rawCmd, ...rest] = trimmed.slice(1).split(" ");
+    const cont = await run(rawCmd.toLowerCase(), rest.join(" "));
+    if (cont) prompt();
+    else {
+      rl.close();
+      await canvas.close();
+    }
+  });
+
+  prompt();
 }
-
-// Interactive mode
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-const prompt = () => rl.question("> ", async (line) => {
-  const trimmed = line.trim();
-  if (!trimmed.startsWith("/")) {
-    console.log('Les commandes commencent par /. Tapez /help.');
-    return prompt();
-  }
-  const [rawCmd, ...rest] = trimmed.slice(1).split(" ");
-  const cmd = rawCmd.toLowerCase();
-  const arg = rest.join(" ");
-  const cont = await run(cmd, arg);
-  if (cont) prompt();
-  else {
-    rl.close();
-    await canvas.close();
-  }
-});
-
-prompt();
