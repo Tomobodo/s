@@ -8,7 +8,7 @@ export class TitleState extends AppState {
   }
 
   async onMessage(x, y, v, sid) {
-    if (x >= 27 && y >= 26 && x <= 29 && y <= 28) {
+    if (x >= 6 && y >= 23 && x <= 25 && y <= 29) {
       this.canvas.color_fill(9);
       await this.canvas.flush();
       await this.setState("play");
