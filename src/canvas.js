@@ -118,7 +118,8 @@ export class Canvas {
       // external change
       const lx = parsed.c - this.#x;
       const ly = parsed.r - this.#y;
-      const inBounds = lx >= 0 && lx < SCREEN_SIZE && ly >= 0 && ly < SCREEN_SIZE;
+      const inBounds =
+        lx >= 0 && lx < SCREEN_SIZE && ly >= 0 && ly < SCREEN_SIZE;
       if (this.#locked && inBounds) {
         this.#dirty.add(coords);
         this.#signalSync();
@@ -155,7 +156,9 @@ export class Canvas {
         body: JSON.stringify({ c: x, r: y, v: c, sid: this.#sessionId }),
       });
       if (!resp.ok)
-        console.error(`sync pixel(${x},${y}) failed: ${resp.status} ${resp.statusText}`);
+        console.error(
+          `sync pixel(${x},${y}) failed: ${resp.status} ${resp.statusText}`,
+        );
       if (++requestCount >= 20) {
         requestCount = 0;
         await Canvas.wait(0);
@@ -213,7 +216,9 @@ export class Canvas {
         body: JSON.stringify({ c: x, r: y, v: c, sid: this.#sessionId }),
       });
       if (!resp.ok)
-        console.error(`close pixel(${x},${y}) failed: ${resp.status} ${resp.statusText}`);
+        console.error(
+          `close pixel(${x},${y}) failed: ${resp.status} ${resp.statusText}`,
+        );
       if (++requestCount >= 20) {
         requestCount = 0;
         await Canvas.wait(0);

@@ -1,265 +1,161 @@
-import { SCREEN_SIZE } from "../canvas.js";
 import { AppState } from "../app/AppState.js";
-
-const SNAKE_COLOR = 5; // vert
-const HEAD_COLOR = 6; // émeraude
-const FOOD_COLOR = 2; // orange
-const BONUS_COLOR = 8; // violet
-const BG_COLOR = 0; // crème
-const PORTAL_COLOR = 10; // turquoise
+import { SCREEN_SIZE } from "../canvas.js";
+import { Background } from "./Background.js";
+import { Food } from "./Food.js";
+import { Bonus } from "./Bonus.js";
+import { Portal } from "./Portal.js";
+import { Snake } from "./Snake.js";
 
 const FOOD_COUNT = 20;
 const BONUS_SPAWN_DELAY = 15000;
-const BONUS_LIFETIME = 8000;
 const BONUS_DURATION = 10000;
 const PORTAL_SPAWN_DELAY = 20000;
-const PORTAL_LIFETIME = 10000;
 
 export class PlayState extends AppState {
-  snake = null;
-  dir = null;
-  nextDir = null;
-  foods = null;
-  bg = null;
-  score = 0;
-  currentMs = 1000;
-  bonusFruit = null;
-  bonusTimeoutId = null;
-  bonusLifetimeId = null;
-  spawnTimeoutId = null;
-  portalPair = null;
-  portalSpawnTimeoutId = null;
-  portalLifetimeId = null;
+  #bg = null;
+  #food = null;
+  #bonus = null;
+  #portal = null;
+  #snakes = [];
 
-  #loopRunning = false;
-  #loopIntervalId = null;
+  #score = 0;
+  #active = false;
+  #bonusTimeoutId = null;
+  #spawnTimeoutId = null;
+  #portalSpawnTimeoutId = null;
+  #availableSnakePatterns = [
+    [5],
+    [7],
+    [4],
+    [3],
+    [1],
+    [10],
+    [5, 4],
+    [3, 4],
+    [7, 4],
+    [1, 5],
+    [3, 1],
+    [5, 7],
+  ];
 
-  #bgAt(x, y) {
-    return this.bg[`${x},${y}`] ?? BG_COLOR;
+  async onEnter() {
+    this.#score = 0;
+    this.#active = true;
+
+    this.#bg = new Background();
+    this.#food = new Food(FOOD_COUNT);
+    this.#bonus = new Bonus();
+    this.#portal = new Portal();
+
+    this.#snakes = [];
+
+    this.add(this.#bg).add(this.#food).add(this.#bonus).add(this.#portal);
+
+    this.addSnake();
+
+    this.canvas.lock();
+
+    this.#scheduleBonus();
+    this.#schedulePortal();
   }
 
-  #allSpecials() {
-    return [
-      ...this.foods,
-      ...(this.bonusFruit ? [this.bonusFruit] : []),
-      ...(this.portalPair ?? []),
-    ];
+  addSnake() {
+    const pattern =
+      this.#availableSnakePatterns[
+        Math.floor(Math.random() * this.#availableSnakePatterns.length)
+      ];
+    const snake = new Snake(pattern, {
+      food: this.#food,
+      snakes: this.#snakes,
+      bonus: this.#bonus,
+      portal: this.#portal,
+    });
+    snake.onDead = () => this.#onSnakeDeath(snake);
+    snake.onAteFood = (s) => this.#onAteFood(s);
+    snake.onAteBonus = (s) => this.#onAteBonus(s);
+    snake.onUsedPortal = () => this.#schedulePortal();
+    this.add(snake);
+    this.#snakes.push(snake);
   }
 
-  #placeFood(blocked = []) {
+  onExit() {
+    this.#active = false;
+    this.canvas.unlock();
+    this.#snakes = [];
+    clearTimeout(this.#spawnTimeoutId);
+    clearTimeout(this.#bonusTimeoutId);
+    clearTimeout(this.#portalSpawnTimeoutId);
+  }
+
+  onMessage(x, y, v, sid) {
+    for (const d of this.drawables) {
+      if (d.hitTest(x, y)) d.onClick(x, y, v, sid);
+      d.onMessage(x, y, v, sid);
+    }
+  }
+
+  async #onSnakeDeath(snake) {
+    const snakeIndex = this.#snakes.indexOf(snake);
+    this.#snakes.splice(snakeIndex, 1);
+
+    if (this.#snakes.length <= 0) {
+      await this.setState("game_over");
+    }
+  }
+
+  #onAteFood(snake) {
+    this.#score++;
+    if (this.#score % 10 === 0) {
+      const ms = Math.max(200, 1000 - Math.floor(this.#score / 10) * 100);
+      snake.setSpeed(ms);
+    }
+  }
+
+  #onAteBonus(snake) {
+    const boostedMs = Math.max(50, Math.floor(snake.getSpeed() / 2));
+    snake.setSpeed(boostedMs);
+    this.#bonusTimeoutId = setTimeout(() => {
+      if (!this.#active) return;
+      snake.setSpeed(
+        Math.max(200, 1000 - Math.floor(this.#score / 10) * 100),
+      );
+      this.#scheduleBonus();
+    }, BONUS_DURATION);
+  }
+
+  #randomPos(occupied) {
     let pos;
     do {
       pos = {
         x: Math.floor(Math.random() * SCREEN_SIZE),
         y: Math.floor(Math.random() * SCREEN_SIZE),
       };
-    } while (
-      this.snake.some((s) => s.x === pos.x && s.y === pos.y) ||
-      blocked.some((f) => f.x === pos.x && f.y === pos.y)
-    );
+    } while (occupied.some((o) => o.x === pos.x && o.y === pos.y));
     return pos;
   }
 
-  #startLoop(ms) {
-    if (this.#loopIntervalId) clearInterval(this.#loopIntervalId);
-    this.#loopIntervalId = setInterval(async () => {
-      if (this.#loopRunning) return;
-      this.#loopRunning = true;
-      try {
-        await this.onUpdate();
-      } finally {
-        this.#loopRunning = false;
-      }
-    }, ms);
+  #occupied() {
+    return [
+      ...this.#snakes.flatMap((s) => s.getSegments()),
+      ...(this.#bonus.getPosition() ? [this.#bonus.getPosition()] : []),
+      ...(this.#portal.getPair() ?? []),
+    ];
   }
 
   #scheduleBonus() {
-    this.spawnTimeoutId = setTimeout(() => {
-      if (!this.snake) return;
-      const bf = this.#placeFood(this.#allSpecials());
-      this.bonusFruit = bf;
-      this.canvas.draw_pixel(bf.x, bf.y, BONUS_COLOR);
-      this.bonusLifetimeId = setTimeout(() => {
-        if (!this.bonusFruit) return;
-        this.canvas.draw_pixel(bf.x, bf.y, this.#bgAt(bf.x, bf.y));
-        this.bonusFruit = null;
-        this.#scheduleBonus();
-      }, BONUS_LIFETIME);
+    this.#spawnTimeoutId = setTimeout(() => {
+      if (!this.#active) return;
+      this.#bonus.setPosition(this.#randomPos(this.#occupied()));
     }, BONUS_SPAWN_DELAY);
   }
 
   #schedulePortal() {
-    this.portalSpawnTimeoutId = setTimeout(() => {
-      if (!this.snake) return;
-      const pfA = this.#placeFood(this.#allSpecials());
-      const pfB = this.#placeFood([...this.#allSpecials(), pfA]);
-      this.portalPair = [pfA, pfB];
-      this.canvas.draw_pixel(pfA.x, pfA.y, PORTAL_COLOR);
-      this.canvas.draw_pixel(pfB.x, pfB.y, PORTAL_COLOR);
-      this.portalLifetimeId = setTimeout(() => {
-        if (!this.portalPair) return;
-        for (const pf of this.portalPair)
-          this.canvas.draw_pixel(pf.x, pf.y, this.#bgAt(pf.x, pf.y));
-        this.portalPair = null;
-        this.#schedulePortal();
-      }, PORTAL_LIFETIME);
+    this.#portalSpawnTimeoutId = setTimeout(() => {
+      if (!this.#active) return;
+      const occ = this.#occupied();
+      const a = this.#randomPos(occ);
+      const b = this.#randomPos([...occ, a]);
+      this.#portal.setPortals([a, b]);
     }, PORTAL_SPAWN_DELAY);
-  }
-
-  async onEnter() {
-    this.score = 0;
-    this.currentMs = 1000;
-    this.bonusFruit = null;
-    this.portalPair = null;
-
-    this.bg = {};
-    for (let y = 0; y < SCREEN_SIZE; y++)
-      for (let x = 0; x < SCREEN_SIZE; x++)
-        this.bg[`${x},${y}`] = this.canvas.get_pixel(x, y);
-
-    const cx = Math.floor(SCREEN_SIZE / 2);
-    const cy = Math.floor(SCREEN_SIZE / 2);
-    this.snake = [
-      { x: cx, y: cy },
-      { x: cx - 1, y: cy },
-      { x: cx - 2, y: cy },
-    ];
-    this.dir = { dx: 1, dy: 0 };
-    this.nextDir = { dx: 1, dy: 0 };
-    this.foods = [];
-
-    for (let i = 0; i < FOOD_COUNT; i++) {
-      const f = this.#placeFood(this.foods);
-      this.foods.push(f);
-      this.canvas.draw_pixel(f.x, f.y, FOOD_COLOR);
-    }
-
-    for (let i = 0; i < this.snake.length; i++) {
-      const seg = this.snake[i];
-      this.canvas.draw_pixel(seg.x, seg.y, i === 0 ? HEAD_COLOR : SNAKE_COLOR);
-    }
-
-    await this.canvas.flush();
-    this.canvas.lock();
-
-    this.#startLoop(1000);
-    this.#scheduleBonus();
-    this.#schedulePortal();
-  }
-
-  async onUpdate() {
-    this.dir = this.nextDir;
-
-    const head = this.snake[0];
-    const newHead = {
-      x: (head.x + this.dir.dx + SCREEN_SIZE) % SCREEN_SIZE,
-      y: (head.y + this.dir.dy + SCREEN_SIZE) % SCREEN_SIZE,
-    };
-
-    if (this.snake.some((seg) => seg.x === newHead.x && seg.y === newHead.y)) {
-      await this.setState("game_over");
-      return;
-    }
-
-    const foodIndex = this.foods.findIndex(
-      (f) => f.x === newHead.x && f.y === newHead.y,
-    );
-    const ateBonus =
-      this.bonusFruit?.x === newHead.x && this.bonusFruit?.y === newHead.y;
-    const portalIndex =
-      this.portalPair?.findIndex(
-        (p) => p.x === newHead.x && p.y === newHead.y,
-      ) ?? -1;
-
-    if (portalIndex !== -1) {
-      clearTimeout(this.portalLifetimeId);
-      const dest = this.portalPair[1 - portalIndex];
-      this.portalPair = null;
-      this.canvas.draw_pixel(head.x, head.y, SNAKE_COLOR);
-      this.canvas.draw_pixel(
-        newHead.x,
-        newHead.y,
-        this.#bgAt(newHead.x, newHead.y),
-      );
-      this.canvas.draw_pixel(dest.x, dest.y, this.#bgAt(dest.x, dest.y));
-      this.snake.unshift(dest);
-      this.canvas.draw_pixel(dest.x, dest.y, HEAD_COLOR);
-      const portalTail = this.snake.pop();
-      this.canvas.draw_pixel(
-        portalTail.x,
-        portalTail.y,
-        this.#bgAt(portalTail.x, portalTail.y),
-      );
-      this.#schedulePortal();
-      return;
-    }
-
-    this.canvas.draw_pixel(head.x, head.y, SNAKE_COLOR);
-    this.snake.unshift(newHead);
-    this.canvas.draw_pixel(newHead.x, newHead.y, HEAD_COLOR);
-
-    if (ateBonus) {
-      clearTimeout(this.bonusLifetimeId);
-      clearTimeout(this.bonusTimeoutId);
-      this.bonusFruit = null;
-      const boostedMs = Math.max(50, Math.floor(this.currentMs / 2));
-      this.#startLoop(boostedMs);
-      this.bonusTimeoutId = setTimeout(() => {
-        if (!this.snake) return;
-        this.#startLoop(this.currentMs);
-        this.#scheduleBonus();
-      }, BONUS_DURATION);
-    } else if (foodIndex !== -1) {
-      this.score++;
-      if (this.score % 10 === 0) {
-        this.currentMs = Math.max(
-          200,
-          1000 - Math.floor(this.score / 10) * 100,
-        );
-        this.#startLoop(this.currentMs);
-      }
-      const newFood = this.#placeFood(this.#allSpecials());
-      this.foods[foodIndex] = newFood;
-      this.canvas.draw_pixel(newFood.x, newFood.y, FOOD_COLOR);
-    } else {
-      const tail = this.snake.pop();
-      this.canvas.draw_pixel(tail.x, tail.y, this.#bgAt(tail.x, tail.y));
-    }
-  }
-
-  onExit() {
-    this.canvas.unlock();
-    clearInterval(this.#loopIntervalId);
-    this.#loopIntervalId = null;
-    clearTimeout(this.spawnTimeoutId);
-    clearTimeout(this.bonusLifetimeId);
-    clearTimeout(this.bonusTimeoutId);
-    clearTimeout(this.portalSpawnTimeoutId);
-    clearTimeout(this.portalLifetimeId);
-    this.snake = null;
-    this.bonusFruit = null;
-    this.portalPair = null;
-  }
-
-  onMessage(x, y, v, sid) {
-    if (!this.snake) return;
-
-    if (x >= 0 && x < SCREEN_SIZE && y >= 0 && y < SCREEN_SIZE) {
-      const oldColor = this.canvas.get_pixel(x, y);
-      this.bg[`${x},${y}`] = oldColor;
-      this.canvas.draw_pixel(x, y, oldColor);
-    }
-
-    const head = this.snake[0];
-    const ry = y - head.y;
-    const rx = x - head.x;
-
-    if (this.nextDir.dx !== 0) {
-      if (ry < 0) this.nextDir = { dx: 0, dy: -1 };
-      else if (ry > 0) this.nextDir = { dx: 0, dy: 1 };
-    } else {
-      if (rx < 0) this.nextDir = { dx: -1, dy: 0 };
-      else if (rx > 0) this.nextDir = { dx: 1, dy: 0 };
-    }
   }
 }

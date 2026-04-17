@@ -19,13 +19,35 @@ const canvas = new Canvas({
   restore: !args["no-restore"],
 });
 
+// Ordered app list for nextApp() cycling
+const appOrder = [];
+let currentAppIndex = -1;
+
+async function startAppAt(index) {
+  if (currentAppIndex >= 0) await appOrder[currentAppIndex].onExit();
+  currentAppIndex = index;
+  await appOrder[currentAppIndex].onEnter();
+}
+
+async function nextApp() {
+  await startAppAt((currentAppIndex + 1) % appOrder.length);
+}
+
+async function prevApp() {
+  await startAppAt((currentAppIndex - 1 + appOrder.length) % appOrder.length);
+}
+
+const snakeApp = new SnakeApp(canvas, { nextApp, prevApp });
+appOrder.push(snakeApp);
+
+// Named map for CLI /app command
 const apps = {
-  snake: new SnakeApp(canvas),
+  snake: snakeApp,
 };
 
-let currentApp = null;
-
-await canvas.connect(({ x, y, c, sid }) => currentApp?.onMessage(x, y, c, sid));
+await canvas.connect(({ x, y, c, sid }) => {
+  if (currentAppIndex >= 0) appOrder[currentAppIndex].onMessage(x, y, c, sid);
+});
 
 function help() {
   console.log("/help            — afficher cette aide");
@@ -60,8 +82,8 @@ async function run(cmd, arg) {
         console.log(`App inconnue: ${arg}. Apps disponibles: ${Object.keys(apps).join(", ")}`);
         break;
       }
-      currentApp = app;
-      await app.start();
+      const idx = appOrder.indexOf(app);
+      await startAppAt(idx);
       break;
     }
     case "q":
