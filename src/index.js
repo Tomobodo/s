@@ -2,6 +2,7 @@ import readline from "readline";
 
 import { Canvas } from "./canvas.js";
 import { SnakeApp } from "./snake/index.js";
+import { LifeApp } from "./life/index.js";
 
 // Parse --key=value and --flag args
 const rawArgs = process.argv.slice(2);
@@ -36,8 +37,9 @@ async function prevApp() {
 }
 
 const apps = [
-  { name: "snake", app: new SnakeApp(canvas, { nextApp, prevApp }) },
+  { name: "snake",   app: new SnakeApp(canvas, { nextApp, prevApp }) },
   { name: "snakeVs", app: new SnakeApp(canvas, { nextApp, prevApp }, true) },
+  { name: "life",    app: new LifeApp(canvas, { nextApp, prevApp }) },
 ];
 
 await canvas.connect(({ x, y, c, sid }) => {
