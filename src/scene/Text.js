@@ -84,15 +84,15 @@ export class Text extends GameObject {
     }
   }
 
-  #textEndX() {
-    return this.#charX(this.#chars.length);
+  #charX(pos) {
+    return this.#x + pos * (CHAR_W + CHAR_GAP);
   }
 
   hitTest(x, y) {
     if (this.cursorPos === undefined) return false;
     return (
       x >= this.#x &&
-      x < this.#textEndX() &&
+      x < this.#charX(this.#chars.length) &&
       y >= this.#y - 8 &&
       y < this.#y + CHAR_H + 8
     );
@@ -119,33 +119,13 @@ export class Text extends GameObject {
     }
   }
 
-  #charX(pos) {
-    let cx = this.#x;
-    let pendingGap = 0;
-    for (let i = 0; i < pos && i < this.#chars.length; i++) {
-      const isI = this.#chars[i].toUpperCase() === "I";
-      if (!isI) cx += pendingGap;
-      cx += CHAR_W;
-      pendingGap = isI ? 0 : CHAR_GAP;
-    }
-    const atI = this.#chars[pos]?.toUpperCase() === "I";
-    if (!atI) cx += pendingGap;
-    return cx;
-  }
-
   draw(buf, width) {
     if (!fontColors) return;
 
-    let cx = this.#x;
-    let pendingGap = 0;
-
     for (let i = 0; i < this.#chars.length; i++) {
-      const ch = this.#chars[i];
-      const isI = ch.toUpperCase() === "I";
-      if (!isI) cx += pendingGap;
-
+      const cx = this.#charX(i);
       const isCursor = this.cursorPos !== undefined && i === this.cursorPos;
-      const idx = charIndex(ch);
+      const idx = charIndex(this.#chars[i]);
 
       if (idx !== SPACE_IDX) {
         const srcX = idx * CHAR_W;
@@ -169,9 +149,6 @@ export class Text extends GameObject {
           buf[by * width + bx] = this.#color;
         }
       }
-
-      cx += CHAR_W;
-      pendingGap = isI ? 0 : CHAR_GAP;
     }
   }
 }

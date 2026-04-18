@@ -5,7 +5,7 @@ import { ProgressBar } from "./scene/ProgressBar.js";
 import { SCREEN_SIZE } from "./canvas.js";
 import { saveScore, getTopScores } from "./db.js";
 
-const SCORE_DURATION = 30000;
+const SCORE_DURATION = 60000;
 const LINE_H = 6;
 const CHAR_W = 3;
 const CHAR_GAP = 1;
@@ -70,6 +70,8 @@ export class ScoreState extends AppState {
       this.#playerNameText.cursorPos = 0;
       this.add(this.#playerNameText);
     }
+
+    await this.render();
   }
 
   #buildSlots(top, playerScore, playerRank) {
@@ -82,12 +84,22 @@ export class ScoreState extends AppState {
           slots.push({ type: "player", rank, score: playerScore });
         } else if (topIdx < top.length) {
           const entry = top[topIdx++];
-          slots.push({ type: "entry", rank, score: entry.score, user: entry.user });
+          slots.push({
+            type: "entry",
+            rank,
+            score: entry.score,
+            user: entry.user,
+          });
         }
       }
     } else {
       for (let i = 0; i < 3 && i < top.length; i++) {
-        slots.push({ type: "entry", rank: i + 1, score: top[i].score, user: top[i].user });
+        slots.push({
+          type: "entry",
+          rank: i + 1,
+          score: top[i].score,
+          user: top[i].user,
+        });
       }
       slots.push({ type: "gap" });
       slots.push({ type: "player", rank: playerRank, score: playerScore });
