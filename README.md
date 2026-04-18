@@ -72,3 +72,9 @@ docker compose up --build
 ```
 
 L'image configure par défaut `--x=44 --y=77 --app=snake`. Pour changer, modifier la ligne `CMD` du `Dockerfile` ou passer des variables d'environnement via `docker-compose.yml`.
+
+## Scores
+
+Les scores sont persistés dans une base SQLite (`scores.db`) via `better-sqlite3`. La table `scores` contient quatre colonnes : `id` (autoincrement), `app` (nom de l'app), `user` (nom du joueur), `score` (entier).
+
+En local le fichier est créé automatiquement à la racine du projet au premier lancement. Sous Docker, un volume nommé `scores` est monté sur `/app/scores.db` pour survivre aux rebuilds.

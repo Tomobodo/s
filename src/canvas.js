@@ -11,17 +11,17 @@ export const SCREEN_SIZE = 32;
 const SYNC_URL = process.env.WALL_URL ?? "https://wall.plgrnd.cc";
 const SYNC_TOPIC = "https://plgrnd.cc/wall";
 export const PALETTE = [
-  "#EDE8DC", // 0  — vide (crème)
-  "#D4B882", // 1  — buff doré
-  "#F05A20", // 2  — orange vif
-  "#A82020", // 3  — rouge intense
-  "#F5C820", // 4  — jaune éclatant
-  "#5EC462", // 5  — vert franc
-  "#1E8858", // 6  — émeraude
-  "#3858CC", // 7  — bleu électrique
-  "#8E40D0", // 8  — violet saturé
-  "#1E1830", // 9  — encre profonde
-  "#50D8C8", // 10 — turquoise vif
+  "#EDE8DC", // 0  crème
+  "#D4B882", // 1  buff doré
+  "#F05A20", // 2  orange vif
+  "#A82020", // 3  rouge intense
+  "#F5C820", // 4  jaune éclatant
+  "#5EC462", // 5  vert franc
+  "#1E8858", // 6  émeraude
+  "#3858CC", // 7  bleu électrique
+  "#8E40D0", // 8  violet saturé
+  "#1E1830", // 9  encre profonde
+  "#50D8C8", // 10 turquoise vif
 ];
 
 export class Canvas {

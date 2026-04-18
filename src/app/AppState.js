@@ -35,8 +35,8 @@ export class AppState {
     await this.canvas.flush();
   }
 
-  async internalOnEnter() {
-    await this.onEnter();
+  async internalOnEnter(params) {
+    await this.onEnter(params);
     await this.loop();
   }
 

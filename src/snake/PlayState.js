@@ -117,7 +117,7 @@ export class PlayState extends AppState {
     }
 
     if (this.#snakes.length <= 0) {
-      await this.setState("game_over");
+      await this.setState("game_over", { score: this.#score });
     }
   }
 

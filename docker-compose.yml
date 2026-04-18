@@ -3,3 +3,8 @@ services:
     build: .
     image: snake
     restart: unless-stopped
+    volumes:
+      - scores:/app/scores.db
+
+volumes:
+  scores:

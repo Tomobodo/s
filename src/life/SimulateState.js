@@ -1,42 +1,30 @@
 import { AppState } from "../app/AppState.js";
-import { GameObject } from "../scene/GameObject.js";
 import { SCREEN_SIZE } from "../canvas.js";
 import { GridDrawable } from "./GridDrawable.js";
+import { ProgressBar } from "../scene/ProgressBar.js";
 
 const SIMULATE_TIME = 30000;
 const STEP_INTERVAL = 250;
-
-class ProgressBarDrawable extends GameObject {
-  #getRemaining;
-
-  constructor(getRemaining) {
-    super();
-    this.#getRemaining = getRemaining;
-  }
-
-  draw(buf, width) {
-    const filled = Math.round(SCREEN_SIZE * this.#getRemaining());
-    for (let x = 0; x < SCREEN_SIZE; x++)
-      buf[x] = x < filled ? 0 : 9;
-  }
-}
 
 export class SimulateState extends AppState {
   #elapsed = 0;
   #stepAccumulator = 0;
   #done = false;
+  #bar = null;
 
   async onEnter() {
     this.#elapsed = 0;
     this.#stepAccumulator = 0;
     this.#done = false;
     this.add(new GridDrawable(this.app.grid));
-    this.add(new ProgressBarDrawable(() => Math.max(0, 1 - this.#elapsed / SIMULATE_TIME)));
+    this.#bar = new ProgressBar(0, 0, SCREEN_SIZE, 1, 0, 9);
+    this.add(this.#bar);
   }
 
   onUpdate(dt) {
     if (this.#done) return;
     this.#elapsed += dt;
+    this.#bar.progress = Math.max(0, 1 - this.#elapsed / SIMULATE_TIME);
     if (this.#elapsed >= SIMULATE_TIME) {
       this.#done = true;
       this.setState("title");

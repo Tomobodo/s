@@ -15,7 +15,7 @@ export class App {
   _register(name, state) {
     state.app = this;
     state.canvas = this.canvas;
-    state.setState = (name) => this.setState(name);
+    state.setState = (name, params) => this.setState(name, params);
     state.nextApp = () => this.nextApp();
     state.prevApp = () => this.prevApp();
     this.#states[name] = state;
@@ -38,7 +38,7 @@ export class App {
 
   async start() {}
 
-  async setState(name) {
+  async setState(name, params) {
     if (this.#appExiting) return;
     if (this.#currentStateName === name) return;
 
@@ -55,7 +55,7 @@ export class App {
     }
 
     this.#stateEntering = true;
-    if (this.#currentState) await this.#currentState.internalOnEnter();
+    if (this.#currentState) await this.#currentState.internalOnEnter(params);
     this.#stateEntering = false;
   }
 

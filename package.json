@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "better-sqlite3": "^12.9.0",
     "eventsource": "^4.1.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.5"

@@ -2,6 +2,7 @@ import { App } from "../app/App.js";
 import { TitleState } from "./TitleState.js";
 import { PlayState } from "./PlayState.js";
 import { GameOverState } from "./GameOverState.js";
+import { ScoreState } from "../ScoreState.js";
 
 export class SnakeApp extends App {
   constructor(canvas, options, vsmode = false) {
@@ -11,6 +12,7 @@ export class SnakeApp extends App {
     this._register("title", new TitleState());
     this._register("play", new PlayState());
     this._register("game_over", new GameOverState());
+    this._register("score", new ScoreState());
   }
 
   async start() {
