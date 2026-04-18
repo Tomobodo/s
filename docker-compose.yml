@@ -4,7 +4,7 @@ services:
     image: snake
     restart: unless-stopped
     volumes:
-      - scores:/app/scores.db
+      - scores:/app/src/scores.db
 
 volumes:
   scores:
