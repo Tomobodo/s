@@ -36,6 +36,8 @@ export class Canvas {
   #closed = false;
   #syncWake = null;
   #restore;
+  #batchSize = 1;
+  #silent = false;
 
   constructor({ x = 0, y = 0, restore = true } = {}) {
     this.#x = x;
@@ -130,6 +132,11 @@ export class Canvas {
     };
   }
 
+  setSyncOptions({ batchSize = 10, silent = false } = {}) {
+    this.#batchSize = batchSize;
+    this.#silent = silent;
+  }
+
   #signalSync() {
     const wake = this.#syncWake;
     this.#syncWake = null;
@@ -146,18 +153,23 @@ export class Canvas {
         continue;
       }
       const keys = [...this.#dirty];
-      const key = keys[Math.floor(Math.random() * keys.length)];
-      const c = this.#state[key];
-      this.#dirty.delete(key);
-      const [x, y] = key.split(",").map(Number);
-      const resp = await fetch(SYNC_URL + "/pixel", {
+      const pixels = [];
+      while (keys.length > 0 && pixels.length < this.#batchSize) {
+        const keyIndex = Math.floor(Math.random() * keys.length);
+        const key = keys[keyIndex];
+        const c = this.#state[key];
+        this.#dirty.delete(key);
+        const [x, y] = key.split(",").map(Number);
+        pixels.push({ c: x, r: y, v: c, sid: this.#sessionId });
+        keys.splice(keyIndex, 1);
+      }
+      const body = JSON.stringify({ pixels, s: this.#silent });
+      const resp = await fetch(SYNC_URL + "/pixels", {
         method: "POST",
-        body: JSON.stringify({ c: x, r: y, v: c, sid: this.#sessionId }),
+        body,
       });
       if (!resp.ok)
-        console.error(
-          `sync pixel(${x},${y}) failed: ${resp.status} ${resp.statusText}`,
-        );
+        console.error(`sync failed: ${resp.status} ${resp.statusText}`);
       if (++requestCount >= 20) {
         requestCount = 0;
         await Canvas.wait(0);

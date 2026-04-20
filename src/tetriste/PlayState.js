@@ -165,11 +165,11 @@ export class PlayState extends AppState {
     this.#nextDrawable.setCurrent(this.#nextPieceType);
     this.add(this.#nextDrawable);
 
-    this.add(new Button(9, 27, await Canvas.load_png("sprites/tetriste/buttons1.png"), () => this.onLeftButton()));
-    this.add(new Button(11, 22, await Canvas.load_png("sprites/tetriste/buttons2.png"), () => this.onRotateLeftButton()));
-    this.add(new Button(17, 22, await Canvas.load_png("sprites/tetriste/buttons5.png"), () => this.onRotateRightButton()));
-    this.add(new Button(19, 27, await Canvas.load_png("sprites/tetriste/buttons3.png"), () => this.onRightButton()));
-    this.add(new Button(14, 27, await Canvas.load_png("sprites/tetriste/buttons4.png"), () => this.onDownButton()));
+    this.add(await Button.load(9, 27, "sprites/tetriste/buttons1.png", () => this.onLeftButton()));
+    this.add(await Button.load(11, 22, "sprites/tetriste/buttons2.png", () => this.onRotateLeftButton()));
+    this.add(await Button.load(17, 22, "sprites/tetriste/buttons5.png", () => this.onRotateRightButton()));
+    this.add(await Button.load(19, 27, "sprites/tetriste/buttons3.png", () => this.onRightButton()));
+    this.add(await Button.load(14, 27, "sprites/tetriste/buttons4.png", () => this.onDownButton()));
 
     this.#spawnPiece();
   }

@@ -1,4 +1,3 @@
-import { Canvas } from "../canvas.js";
 import { AppState } from "../app/AppState.js";
 import { Button } from "../scene/Button.js";
 import { QRCode } from "../scene/QRCode.js";
@@ -10,20 +9,15 @@ export class QRState extends AppState {
     this.add(new QRCode("t.ly/XhonS", { centered: true }));
 
     this.add(
-      new Button(0, 22, await Canvas.load_png("sprites/prev.png"), async () => {
+      await Button.load(0, 22, "sprites/prev.png", async () => {
         this.prevApp();
       }),
     );
 
     this.add(
-      new Button(
-        27,
-        22,
-        await Canvas.load_png("sprites/next.png"),
-        async () => {
-          this.nextApp();
-        },
-      ),
+      await Button.load(27, 22, "sprites/next.png", async () => {
+        this.nextApp();
+      }),
     );
   }
 }

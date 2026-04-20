@@ -14,9 +14,13 @@ export class Sprite extends GameObject {
     this.#oy = y;
     this.#width = width;
     this.#height = height;
-    this.#colors = pixels.map((hex) => {
-      return hex === null ? null : Canvas.nearest_palette(hex);
-    });
+    this.#colors = pixels.map((hex) =>
+      hex === null ? null : Canvas.nearest_palette(hex),
+    );
+  }
+
+  static async load(x, y, path) {
+    return new Sprite(x, y, await Canvas.load_png(path));
   }
 
   get ox() {

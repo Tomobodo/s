@@ -9,6 +9,10 @@ export class RepoApp extends App {
   }
 
   async start() {
+    this.canvas.setSyncOptions({
+      batchSize: 10,
+      silent: false,
+    });
     await this.setState("qr");
   }
 }

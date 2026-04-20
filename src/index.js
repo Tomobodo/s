@@ -5,6 +5,7 @@ import { SnakeApp } from "./snake/index.js";
 import { LifeApp } from "./life/index.js";
 import { RepoApp } from "./repo/index.js";
 import { TetristeApp } from "./tetriste/index.js";
+import { BadAppleApp } from "./badapple/index.js";
 
 // Parse --key=value and --flag args
 const rawArgs = process.argv.slice(2);
@@ -21,6 +22,8 @@ const canvas = new Canvas({
   y: Number(args.y ?? 0),
   restore: !args["no-restore"],
 });
+
+canvas.setSyncOptions({ batchSize: 10, silent: false });
 
 let currentAppIndex = -1;
 
@@ -41,8 +44,19 @@ async function prevApp() {
 const apps = [
   { name: "snake", app: new SnakeApp(canvas, { nextApp, prevApp }) },
   { name: "snakeVs", app: new SnakeApp(canvas, { nextApp, prevApp }, true) },
-  { name: "life", app: new LifeApp(canvas, { nextApp, prevApp }) },
+  {
+    name: "life",
+    app: new LifeApp(canvas, { nextApp, prevApp }),
+  },
   { name: "tetriste", app: new TetristeApp(canvas, { nextApp, prevApp }) },
+  {
+    name: "badapple",
+    app: new BadAppleApp(
+      canvas,
+      { nextApp, prevApp },
+      { sourceFps: 30, targetFps: 10 },
+    ),
+  },
   { name: "repo", app: new RepoApp(canvas, { nextApp, prevApp }) },
 ];
 

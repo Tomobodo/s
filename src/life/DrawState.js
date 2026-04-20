@@ -32,6 +32,11 @@ export class DrawState extends AppState {
       new ProgressBarDrawable(() => Math.max(0, 1 - this.#elapsed / DRAW_TIME)),
     );
 
+    this.app.canvas.setSyncOptions({
+      batchSize: 1024,
+      silent: true,
+    });
+
     await this.render();
   }
 

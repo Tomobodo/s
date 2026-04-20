@@ -16,6 +16,10 @@ export class SnakeApp extends App {
   }
 
   async start() {
+    this.canvas.setSyncOptions({
+      batchSize: 10,
+      silent: false,
+    });
     await this.setState("title");
   }
 }

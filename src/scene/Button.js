@@ -1,4 +1,5 @@
 import { Sprite } from "./Sprite.js";
+import { Canvas } from "../canvas.js";
 
 export class Button extends Sprite {
   #onClick;
@@ -6,6 +7,10 @@ export class Button extends Sprite {
   constructor(x, y, img, onClick) {
     super(x, y, img);
     this.#onClick = onClick;
+  }
+
+  static async load(x, y, path, onClick) {
+    return new Button(x, y, await Canvas.load_png(path), onClick);
   }
 
   hitTest(x, y) {
