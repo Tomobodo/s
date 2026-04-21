@@ -6,4 +6,5 @@ COPY --chown=node:node . .
 
 RUN npm install
 
-CMD ["node", "src/index.js", "--x=44", "--y=77", "--app=snake"]
+ENTRYPOINT ["node", "src/index.js"]
+CMD ["--x=44", "--y=77", "--app=snake"]

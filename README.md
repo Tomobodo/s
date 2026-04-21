@@ -68,10 +68,16 @@ npm run dev -- --x=44 --y=77 --app=snake   # args custom
 ### Docker
 
 ```shell
+# Lancement standard (--x=44 --y=77 --app=snake par défaut)
 docker compose up --build
+
+# Lancer avec des arguments différents
+docker compose run app --x=44 --y=77 --app=life
+docker compose run app --x=44 --y=77 --sprite=font
+docker compose run app --x=44 --y=77 --c
 ```
 
-L'image configure par défaut `--x=44 --y=77 --app=snake`. Pour changer, modifier la ligne `CMD` du `Dockerfile` ou passer des variables d'environnement via `docker-compose.yml`.
+`ENTRYPOINT` est fixé à `node src/index.js`. `docker compose up` utilise les arguments par défaut (`--x=44 --y=77 --app=snake`). `docker compose run app <args>` les remplace.
 
 ## Scores
 
